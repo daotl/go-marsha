@@ -1,5 +1,5 @@
-github.com/daotl/cbor-gen v0.0.2 h1:xvY2pw0gkTDBOmkfnVSxDf7ymKupZjfqYviyD75cuio=
-github.com/daotl/cbor-gen v0.0.2/go.mod h1:MZyveeZtCc/2rn/nE1hAZ+5eSSpmaa9FpGhz6wSEfxQ=
+github.com/daotl/cbor-gen v0.0.5 h1:X3+qohtQoXWYcKn8AHcKpfJXAOhibEwKhuZOAsdXq8A=
+github.com/daotl/cbor-gen v0.0.5/go.mod h1:MZyveeZtCc/2rn/nE1hAZ+5eSSpmaa9FpGhz6wSEfxQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
