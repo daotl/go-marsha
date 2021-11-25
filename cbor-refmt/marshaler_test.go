@@ -81,7 +81,7 @@ func TestCBORMarshaler(t *testing.T) {
 		assert.NoError(err)
 		s2 := &TestStruct2NoGen{}
 		err = mer.UnmarshalStruct(bin, s2)
-		assert.Equal(cbor_refmt.ErrTypeNotMatch, err)
+		assert.Error(err)
 	})
 
 	t.Run("MarshalStructSlice/UnmarshalStructSlice", func(t *testing.T) {

@@ -5,24 +5,13 @@ package cbor_refmt
 import (
 	"bytes"
 	"errors"
-	"strings"
-
-	cbor "github.com/ipfs/go-ipld-cbor"
-	"github.com/ipfs/go-ipld-cbor/encoding"
-	"github.com/polydawn/refmt/obj/atlas"
 
 	"github.com/daotl/go-marsha"
+	cbor "github.com/ipfs/go-ipld-cbor"
 )
 
 var (
 	ErrNotRegistered = errors.New("model type not registered")
-	ErrTypeNotMatch  = errors.New("model type does not match")
-)
-
-var (
-	emptyAtlas  = atlas.MustBuild()
-	marshaler   = encoding.NewPooledMarshaller(emptyAtlas)
-	unmarshaler = encoding.NewPooledUnmarshaller(emptyAtlas)
 )
 
 // CBORRefmtMarshaler is a Marshaler implementation for CBOR backed by `go-ipld-cbor` and `refmt` packages.
@@ -51,22 +40,11 @@ func (m *CBORRefmtMarshaler) Register(i interface{}) {
 }
 
 func (m *CBORRefmtMarshaler) MarshalPrimitive(p interface{}) ([]byte, error) {
-	return marshaler.Marshal(p)
+	return cbor.DumpObject(p)
 }
 
 func (m *CBORRefmtMarshaler) UnmarshalPrimitive(bin []byte, p interface{}) error {
-	r := bytes.NewReader(bin)
-	if err := unmarshaler.Decode(r, p); err != nil {
-		estr := err.Error()
-		if strings.Contains(estr, "wrong type") {
-			return ErrTypeNotMatch
-		} else if strings.Contains(estr, "EOF") {
-			return err
-		} else {
-			panic("unexpected error in unmarshalling")
-		}
-	}
-	return nil
+	return cbor.DecodeReader(bytes.NewReader(bin), p)
 }
 
 func (m *CBORRefmtMarshaler) MarshalStruct(p marsha.StructPtr) ([]byte, error) {
@@ -78,10 +56,7 @@ func (m *CBORRefmtMarshaler) MarshalStruct(p marsha.StructPtr) ([]byte, error) {
 }
 
 func (m *CBORRefmtMarshaler) UnmarshalStruct(bin []byte, p marsha.StructPtr) error {
-	if err := cbor.DecodeReader(bytes.NewReader(bin), p); err != nil {
-		return ErrTypeNotMatch
-	}
-	return nil
+	return cbor.DecodeReader(bytes.NewReader(bin), p)
 }
 
 func (m *CBORRefmtMarshaler) MarshalStructSlice(p marsha.StructSlicePtr) ([]byte, error) {
@@ -89,8 +64,5 @@ func (m *CBORRefmtMarshaler) MarshalStructSlice(p marsha.StructSlicePtr) ([]byte
 }
 
 func (m *CBORRefmtMarshaler) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) error {
-	if err := cbor.DecodeReader(bytes.NewReader(bin), p); err != nil {
-		return ErrTypeNotMatch
-	}
-	return nil
+	return cbor.DecodeReader(bytes.NewReader(bin), p)
 }
