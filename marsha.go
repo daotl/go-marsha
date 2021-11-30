@@ -26,7 +26,7 @@ type StructPtr interface {
 // StructSlicePtr should be implemented by pointers to struct slices you want to marshal/unmarshal.
 type StructSlicePtr interface {
 	// Val returns the struct slice that StructSlicePtr points to.
-	Val() []Struct
+	Val() []StructPtr
 }
 
 // Marsha is a standard data marshaling and unmarshaling interface which can
@@ -51,10 +51,10 @@ type Marsha interface {
 	UnmarshalStructSlice(bin []byte, p StructSlicePtr) error
 
 	// NewEncoder returns a new encoder that will transmit on the io.Writer.
-	NewEncoder(w io.Writer) *Encoder
+	NewEncoder(w io.Writer) Encoder
 
 	// NewDecoder returns a new decoder that reads from the io.Reader.
-	NewDecoder(r io.Reader) *Decoder
+	NewDecoder(r io.Reader) Decoder
 }
 
 type Encoder interface {

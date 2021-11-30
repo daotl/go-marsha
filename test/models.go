@@ -16,15 +16,15 @@ func (s *TestStruct) Val() marsha.Struct   { return *s }
 
 type TestStructs []TestStruct
 
-func (s *TestStructs) Val() []marsha.Struct {
-	models := make([]marsha.Struct, 0, len(*s))
-	for _, m := range *s {
-		models = append(models, m)
+func (s *TestStructs) Val() []marsha.StructPtr {
+	models := make([]marsha.StructPtr, 0, len(*s))
+	for i := range *s {
+		models = append(models, &(*s)[i])
 	}
 	return models
 }
-func (*TestStructs) NewStruct() marsha.Struct     { return TestStruct{} }
-func (s *TestStructs) Append(m cborgen.StructPtr) { *s = append(*s, *(m.(*TestStruct))) }
+func (*TestStructs) NewStructPtr() marsha.StructPtr { return &TestStruct{} }
+func (s *TestStructs) Append(m cborgen.StructPtr)   { *s = append(*s, *(m.(*TestStruct))) }
 
 type TestStruct2 struct {
 	Data2 int64

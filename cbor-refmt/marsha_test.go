@@ -3,9 +3,9 @@ package cbor_refmt_test
 import (
 	"testing"
 
-	"github.com/daotl/go-marsha"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/daotl/go-marsha"
 	cbor_refmt "github.com/daotl/go-marsha/cbor-refmt"
 )
 
@@ -18,10 +18,10 @@ func (s *TestStructNoGen) Val() marsha.Struct   { return *s }
 
 type TestStructsNoGen []TestStructNoGen
 
-func (s *TestStructsNoGen) Val() []marsha.Struct {
-	models := make([]marsha.Struct, 0, len(*s))
-	for _, m := range *s {
-		models = append(models, m)
+func (s *TestStructsNoGen) Val() []marsha.StructPtr {
+	models := make([]marsha.StructPtr, 0, len(*s))
+	for i := range *s {
+		models = append(models, &(*s)[i])
 	}
 	return models
 }
