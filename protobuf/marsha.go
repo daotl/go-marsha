@@ -106,11 +106,11 @@ func (m *Marsha) UnmarshalStructSlice(_ []byte, _ marsha.StructSlicePtr) error {
 }
 
 // Not implemented
-func (m *Marsha) NewEncoder(_ io.Writer) *marsha.Encoder {
+func (m *Marsha) NewEncoder(_ io.Writer) marsha.Encoder {
 	panic(marsha.ErrUnimplemented)
 }
 
 // Not implemented
-func (m *Marsha) NewDecoder(_ io.Reader) *marsha.Decoder {
+func (m *Marsha) NewDecoder(_ io.Reader) marsha.Decoder {
 	panic(marsha.ErrUnimplemented)
 }
