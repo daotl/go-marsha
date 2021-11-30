@@ -1,50 +1,19 @@
-package cbor_refmt_test
+package cborgen_test
 
 import (
 	"testing"
 
-	"github.com/daotl/go-marsha"
 	"github.com/stretchr/testify/assert"
 
-	cbor_refmt "github.com/daotl/go-marsha/cbor-refmt"
+	"github.com/daotl/go-marsha/cborgen"
+	"github.com/daotl/go-marsha/test"
 )
 
-type TestStructNoGen struct {
-	Data string
-}
-
-func (s TestStructNoGen) Ptr() marsha.StructPtr { return &s }
-func (s *TestStructNoGen) Val() marsha.Struct   { return *s }
-
-type TestStructsNoGen []TestStructNoGen
-
-func (s *TestStructsNoGen) Val() []marsha.Struct {
-	models := make([]marsha.Struct, 0, len(*s))
-	for _, m := range *s {
-		models = append(models, m)
-	}
-	return models
-}
-
-type TestStruct2NoGen struct {
-	Data2 int64
-}
-
-func (s TestStruct2NoGen) Ptr() marsha.StructPtr { return &s }
-func (s *TestStruct2NoGen) Val() marsha.Struct   { return *s }
-
-func TestCBORMarshaler(t *testing.T) {
+func TestMarsha(t *testing.T) {
 	assert := assert.New(t)
-	mer := cbor_refmt.New()
-	s := &TestStructNoGen{"test"}
-	ss := &TestStructsNoGen{TestStructNoGen{"test"}, TestStructNoGen{"test2"}}
-
-	t.Run("Marhsal error: model type not registered", func(t *testing.T) {
-		_, err := mer.MarshalStruct(s)
-		assert.Equal(cbor_refmt.ErrNotRegistered, err)
-	})
-
-	mer.Register(TestStructNoGen{})
+	mer := cborgen.New()
+	s := &test.TestStruct{"test"}
+	ss := &test.TestStructs{test.TestStruct{"test"}, test.TestStruct{"test2"}}
 
 	t.Run("MarshalPrimitive/MarshalPrimitive primitives", func(t *testing.T) {
 		v1 := 52
@@ -69,25 +38,24 @@ func TestCBORMarshaler(t *testing.T) {
 	t.Run("MarshalStruct/UnmarshalStruct", func(t *testing.T) {
 		bin, err := mer.MarshalStruct(s)
 		assert.NoError(err)
-		s2 := &TestStructNoGen{}
+		s2 := &test.TestStruct{}
 		err = mer.UnmarshalStruct(bin, s2)
 		assert.NoError(err)
 		assert.Equal(s.Data, s2.Data)
 	})
 
 	t.Run("UnmarshalStruct error: model type does not match", func(t *testing.T) {
-		mer.Register(TestStruct2NoGen{})
 		bin, err := mer.MarshalStruct(s)
 		assert.NoError(err)
-		s2 := &TestStruct2NoGen{}
+		s2 := &test.TestStruct2{}
 		err = mer.UnmarshalStruct(bin, s2)
-		assert.Error(err)
+		assert.Equal(cborgen.ErrTypeNotMatch, err)
 	})
 
 	t.Run("MarshalStructSlice/UnmarshalStructSlice", func(t *testing.T) {
 		bin, err := mer.MarshalStructSlice(ss)
 		assert.NoError(err)
-		ss2 := &TestStructsNoGen{}
+		ss2 := &test.TestStructs{}
 		err = mer.UnmarshalStructSlice(bin, ss2)
 		assert.NoError(err)
 		assert.Equal(ss, ss2)
