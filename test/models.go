@@ -5,8 +5,6 @@ import (
 	"github.com/daotl/go-marsha/cborgen"
 )
 
-var _ cborgen.StructPtr = (*TestStruct)(nil)
-
 type TestStruct struct {
 	Data string
 }
