@@ -8,9 +8,11 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"sync"
+
+	cbor "github.com/ipfs/go-ipld-cbor"
 
 	"github.com/daotl/go-marsha"
-	cbor "github.com/ipfs/go-ipld-cbor"
 )
 
 var (
@@ -36,7 +38,7 @@ type StructSlicePtr interface {
 	marsha.StructSlicePtr
 
 	// NewStruct should return an empty marsha.Struct.
-	NewStruct() marsha.Struct
+	NewStructPtr() marsha.StructPtr
 
 	// Append should append `p.Val()` to the `StructSlice` this `StructSlicePtr` points to.
 	Append(p StructPtr)
@@ -87,10 +89,11 @@ func (m *Marsha) MarshalStructSlice(p marsha.StructSlicePtr) (bin []byte, err er
 		return nil, ErrNotCBORStructSlicePtr
 	}
 
-	bins := make([][]byte, len(p.Val()))
+	ptrs := cbp.Val()
+	bins := make([][]byte, len(ptrs))
 	l := 0
-	for i, s := range cbp.Val() {
-		if bins[i], err = m.MarshalStruct(s.Ptr()); err != nil {
+	for i, s := range ptrs {
+		if bins[i], err = m.MarshalStruct(s); err != nil {
 			return nil, err
 		}
 		l += len(bins[i])
@@ -113,7 +116,10 @@ func (m *Marsha) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) error
 
 	r := bytes.NewReader(bin)
 	for {
-		s := cbp.NewStruct().Ptr().(StructPtr)
+		s, ok := cbp.NewStructPtr().(StructPtr)
+		if !ok {
+			return ErrNotCBORStructPtr
+		}
 		if err := m.unmarshal(r, s); err != nil {
 			if err == ErrTypeNotMatch {
 				return err
@@ -135,12 +141,112 @@ func (m *Marsha) unmarshal(r io.Reader, p StructPtr) (err error) {
 	return err
 }
 
-// Not implemented
-func (m *Marsha) NewEncoder(_ io.Writer) error {
-	return marsha.ErrUnimplemented
+type encoder struct {
+	sync.Mutex
+	writer io.Writer
 }
 
-// Not implemented
-func (m *Marsha) NewDecoder(_ io.Reader) error {
-	return marsha.ErrUnimplemented
+func (m *Marsha) NewEncoder(w io.Writer) marsha.Encoder {
+	return &encoder{writer: w}
+}
+
+func (e *encoder) EncodePrimitive(p interface{}) error {
+	bin, err := cbor.DumpObject(p)
+	if err != nil {
+		return err
+	}
+	e.Lock()
+	defer e.Unlock()
+	_, err = io.Copy(e.writer, bytes.NewReader(bin))
+	return err
+}
+
+func (e *encoder) EncodeStruct(p marsha.StructPtr) error {
+	cbp, ok := p.(StructPtr)
+	if !ok {
+		return ErrNotCBORStructPtr
+	}
+	e.Lock()
+	defer e.Unlock()
+	return cbp.MarshalCBOR(e.writer)
+}
+
+func (e *encoder) EncodeStructSlice(p marsha.StructSlicePtr) error {
+	cbp, ok := p.(StructSlicePtr)
+	if !ok {
+		return ErrNotCBORStructSlicePtr
+	}
+	e.Lock()
+	defer e.Unlock()
+	for _, s := range cbp.Val() {
+		elem, ok := s.(StructPtr)
+		if !ok {
+			return ErrNotCBORStructPtr
+		}
+		if err := elem.MarshalCBOR(e.writer); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *Marsha) NewDecoder(r io.Reader) marsha.Decoder {
+	return &decoder{reader: r}
+}
+
+type decoder struct {
+	sync.Mutex
+	reader io.Reader
+}
+
+func (d *decoder) DecodePrimitive(p interface{}) error {
+	d.Lock()
+	defer d.Unlock()
+	return cbor.DecodeReader(d.reader, p)
+}
+
+func (d *decoder) DecodeStruct(p marsha.StructPtr) error {
+	cbp, ok := p.(StructPtr)
+	if !ok {
+		return ErrNotCBORStructPtr
+	}
+	d.Lock()
+	defer d.Unlock()
+	return d.unmarshal(d.reader, cbp)
+}
+
+func (d *decoder) DecodeStructSlice(p marsha.StructSlicePtr) error {
+	cbp, ok := p.(StructSlicePtr)
+	if !ok {
+		return ErrNotCBORStructSlicePtr
+	}
+
+	d.Lock()
+	defer d.Unlock()
+	for {
+		s, ok := cbp.NewStructPtr().(StructPtr)
+		if !ok {
+			return ErrNotCBORStructPtr
+		}
+		if err := d.unmarshal(d.reader, s); err != nil {
+			if err == ErrTypeNotMatch {
+				return err
+			}
+			break
+		}
+		cbp.Append(s)
+	}
+	return nil
+}
+
+// locked
+func (d *decoder) unmarshal(r io.Reader, p StructPtr) (err error) {
+	if err = p.UnmarshalCBOR(r); err != nil {
+		estr := err.Error()
+		if strings.Contains(estr, "wrong type") {
+			err = ErrTypeNotMatch
+		}
+	}
+	return err
 }

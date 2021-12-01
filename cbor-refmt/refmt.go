@@ -3,14 +3,9 @@ package cbor_refmt
 // From: https://github.com/ipfs/go-ipld-cbor/blob/821d2db12599a4c79963e2c7988f2d77c8e19c7e/refmt.go
 
 import (
-	"math/big"
-	"sync"
-
 	"github.com/ipfs/go-cid"
 	cbornode "github.com/ipfs/go-ipld-cbor"
-
 	"github.com/ipfs/go-ipld-cbor/encoding"
-
 	"github.com/polydawn/refmt/obj/atlas"
 )
 
@@ -26,27 +21,14 @@ var cidAtlasEntry = atlas.BuildEntry(cid.Cid{}).
 	)).
 	Complete()
 
-// BigIntAtlasEntry gives a reasonable default encoding for big.Int. It is not
-// included in the entries by default.
-var BigIntAtlasEntry = atlas.BuildEntry(big.Int{}).Transform().
-	TransformMarshal(atlas.MakeMarshalTransformFunc(
-		func(i big.Int) ([]byte, error) {
-			return i.Bytes(), nil
-		})).
-	TransformUnmarshal(atlas.MakeUnmarshalTransformFunc(
-		func(x []byte) (big.Int, error) {
-			return *big.NewInt(0).SetBytes(x), nil
-		})).
-	Complete()
-
-// CborAtlas is the refmt.Atlas used by the CBOR IPLD decoder/encoder.
-var CborAtlas atlas.Atlas
+// cborAtlas is the refmt.Atlas used by the CBOR IPLD decoder/encoder.
+var cborAtlas atlas.Atlas
 var atlasEntries = []*atlas.AtlasEntry{cidAtlasEntry}
 
 var (
 	cloner       encoding.PooledCloner
-	unmarshaller PooledUnmarshaller
-	marshaller   PooledMarshaller
+	unmarshaller encoding.PooledUnmarshaller
+	marshaller   encoding.PooledMarshaller
 )
 
 func init() {
@@ -54,50 +36,16 @@ func init() {
 }
 
 func rebuildAtlas() {
-	CborAtlas = atlas.MustBuild(atlasEntries...).
+	cborAtlas = atlas.MustBuild(atlasEntries...).
 		WithMapMorphism(atlas.MapMorphism{KeySortMode: atlas.KeySortMode_RFC7049})
 
-	marshaller = NewPooledMarshaller(CborAtlas)
-	unmarshaller = NewPooledUnmarshaller(CborAtlas)
-	cloner = encoding.NewPooledCloner(CborAtlas)
+	marshaller = encoding.NewPooledMarshaller(cborAtlas)
+	unmarshaller = encoding.NewPooledUnmarshaller(cborAtlas)
+	cloner = encoding.NewPooledCloner(cborAtlas)
 }
 
-// PooledMarshaller is a thread-safe pooled CBOR marshaller.
-type PooledMarshaller struct {
-	pool sync.Pool
-}
-
-// NewPooledMarshaller returns a PooledMarshaller with the given atlas. Do not
-// copy after use.
-func NewPooledMarshaller(atl atlas.Atlas) PooledMarshaller {
-	return PooledMarshaller{
-		pool: sync.Pool{
-			New: func() interface{} {
-				return encoding.NewMarshallerAtlased(atl)
-			},
-		},
-	}
-}
-
-// PooledUnmarshaller is a thread-safe pooled CBOR unmarshaller.
-type PooledUnmarshaller struct {
-	pool sync.Pool
-}
-
-// NewPooledUnmarshaller returns a PooledUnmarshaller with the given atlas. Do
-// not copy after use.
-func NewPooledUnmarshaller(atl atlas.Atlas) PooledUnmarshaller {
-	return PooledUnmarshaller{
-		pool: sync.Pool{
-			New: func() interface{} {
-				return encoding.NewUnmarshallerAtlased(atl)
-			},
-		},
-	}
-}
-
-// RegisterCborType allows to register a custom cbor type
-func RegisterCborType(i interface{}) {
+// registerCborType allows to register a custom cbor type
+func registerCborType(i interface{}) {
 	var entry *atlas.AtlasEntry
 	if ae, ok := i.(*atlas.AtlasEntry); ok {
 		entry = ae

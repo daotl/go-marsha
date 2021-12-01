@@ -3,15 +3,10 @@
 package cbor_refmt
 
 import (
-	"bytes"
-	"encoding/gob"
 	"io"
-	"reflect"
 	"sync"
-	_ "unsafe"
 
 	"github.com/daotl/go-marsha"
-	"github.com/ipfs/go-ipld-cbor/encoding"
 )
 
 // Marsha is a Marsha implementation for CBOR backed by `go-ipld-cbor` and `refmt` packages.
@@ -36,89 +31,96 @@ func New() *Marsha {
 
 // Register a Struct type by passing empty a Struct.
 func (m *Marsha) Register(i interface{}) {
-	RegisterCborType(i)
+	registerCborType(i)
 }
 
 func (m *Marsha) MarshalPrimitive(p interface{}) ([]byte, error) {
 	return marshaller.Marshal(p)
 }
 
-func (m *Marsha) UnmarshalPrimitive(bin []byte, p interface{}) error {
-	return unmarshaller.Decode(bytes.NewReader(bin), p)
-}
-
 func (m *Marsha) MarshalStruct(p marsha.StructPtr) ([]byte, error) {
 	return marshaller.Marshal(p)
-}
-
-func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) error {
-	return unmarshaller.Decode(bytes.NewReader(bin), p)
 }
 
 func (m *Marsha) MarshalStructSlice(p marsha.StructSlicePtr) ([]byte, error) {
 	return marshaller.Marshal(p)
 }
 
+func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) error {
+	return unmarshaller.Unmarshal(bin, p)
+}
+
+func (m *Marsha) UnmarshalPrimitive(bin []byte, p interface{}) error {
+	return unmarshaller.Unmarshal(bin, p)
+}
+
 func (m *Marsha) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) error {
-	return unmarshaller.Decode(bytes.NewReader(bin), p)
+	return unmarshaller.Unmarshal(bin, p)
 }
 
 // Not implemented
-func (m *Marsha) NewEncoder(w io.Writer) *marsha.Encoder {
-	enc := new(Encoder)
+func (m *Marsha) NewEncoder(w io.Writer) marsha.Encoder {
+	enc := new(encoder)
 	enc.w = w
-	enc.countState = enc.newEncoderState(new(encBuffer))
-	enc.marshaller =
 	return enc
 }
 
 // Not implemented
-func (m *Marsha) NewDecoder(_ io.Reader) *marsha.Decoder {
-	panic(marsha.ErrUnimplemented)
+func (m *Marsha) NewDecoder(r io.Reader) marsha.Decoder {
+	return &decoder{
+		r: r,
+	}
 }
 
-// An Encoder manages the transmission of type and data information to the
+// An encoder manages the transmission of type and data information to the
 // other side of a connection.  It is safe for concurrent use by multiple
 // goroutines.
-type Encoder struct {
-	mutex      sync.Mutex              // each item must be sent atomically
-	w          io.Writer             // where to send the data
-	countState *encoderState           // stage for writing counts
-	freeList   *encoderState           // list of free encoderStates; avoids reallocation
-	byteBuf    encBuffer               // buffer for top-level encoderState
-	err        error
+type encoder struct {
+	sync.Mutex           // each item must be sent atomically
+	w          io.Writer // where to send the data
 }
 
-func (enc *Encoder) EncodeEncodePrimitive(p interface{}) error {
+func (enc *encoder) EncodePrimitive(p interface{}) error {
 	return enc.encode(p)
 }
-func (enc *Encoder) EncodeStruct(p marsha.StructPtr) error {
+func (enc *encoder) EncodeStruct(p marsha.StructPtr) error {
 	return enc.encode(p)
 }
-func (enc *Encoder) EncodeStructSlice(p marsha.StructSlicePtr) error {
+func (enc *encoder) EncodeStructSlice(p marsha.StructSlicePtr) error {
 	return enc.encode(p)
 }
 
-func (enc *Encoder) encode(p interface{}) error {
+func (enc *encoder) encode(p interface{}) error {
 	// Make sure we're single-threaded through here, so multiple
 	// goroutines can share an encoder.
-	enc.mutex.Lock()
-	defer enc.mutex.Unlock()
+	enc.Lock()
+	defer enc.Unlock()
 
-	gob.NewEncoder(nil).
-
-	m := marshaller.pool.Get().(*encoding.Marshaller)
-	err := m.Encode(obj, w)
-	p.pool.Put(m)
-	return err
-
-	// Encode the object.
-	enc.encode(state.b, value, ut)
-	if enc.err == nil {
-		enc.writeMessage(enc.writer(), state.b)
-	}
-
-	enc.freeEncoderState(state)
-	return enc.err
+	return marshaller.Encode(p, enc.w)
 }
 
+type decoder struct {
+	sync.Mutex           // each item must be sent atomically
+	r          io.Reader // where to receive the data
+}
+
+func (d *decoder) DecodePrimitive(p interface{}) error {
+	return d.decode(p)
+}
+
+func (d *decoder) DecodeStruct(p marsha.StructPtr) error {
+	return d.decode(p)
+}
+
+func (d *decoder) DecodeStructSlice(p marsha.StructSlicePtr) error {
+	return d.decode(p)
+}
+
+func (d *decoder) decode(p interface{}) error {
+	// Make sure we're single-threaded through here, so multiple
+	// goroutines can share an encoder.
+	d.Lock()
+	defer d.Unlock()
+
+	return unmarshaller.Decode(d.r, p)
+}
