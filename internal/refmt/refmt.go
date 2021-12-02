@@ -1,6 +1,6 @@
-package cbor_refmt
+package refmt
 
-// From: https://github.com/ipfs/go-ipld-cbor/blob/821d2db12599a4c79963e2c7988f2d77c8e19c7e/refmt.go
+// Adapted from: https://github.com/ipfs/go-ipld-cbor/blob/821d2db12599a4c79963e2c7988f2d77c8e19c7e/refmt.go
 
 import (
 	"github.com/ipfs/go-cid"
@@ -21,39 +21,37 @@ var cidAtlasEntry = atlas.BuildEntry(cid.Cid{}).
 	)).
 	Complete()
 
-// cborAtlas is the refmt.Atlas used by the CBOR IPLD decoder/encoder.
-var cborAtlas atlas.Atlas
-var atlasEntries = []*atlas.AtlasEntry{cidAtlasEntry}
-
-var (
-	cloner       encoding.PooledCloner
-	unmarshaller encoding.PooledUnmarshaller
-	marshaller   encoding.PooledMarshaller
-)
-
-func init() {
-	rebuildAtlas()
+func New() *Refmt {
+	r := &Refmt{
+		atlasEntries: []*atlas.AtlasEntry{cidAtlasEntry},
+	}
+	r.RebuildAlts()
+	return r
 }
 
-func rebuildAtlas() {
-	cborAtlas = atlas.MustBuild(atlasEntries...).
-		WithMapMorphism(atlas.MapMorphism{KeySortMode: atlas.KeySortMode_RFC7049})
+type Refmt struct {
+	atlasEntries []*atlas.AtlasEntry
+	Marshaller   encoding.PooledMarshaller
+	Unmarshaller encoding.PooledUnmarshaller
+}
 
-	marshaller = encoding.NewPooledMarshaller(cborAtlas)
-	unmarshaller = encoding.NewPooledUnmarshaller(cborAtlas)
-	cloner = encoding.NewPooledCloner(cborAtlas)
+func (r *Refmt) RebuildAlts() {
+	cborAtlas := atlas.MustBuild(r.atlasEntries...).
+		WithMapMorphism(atlas.MapMorphism{KeySortMode: atlas.KeySortMode_RFC7049})
+	r.Marshaller = encoding.NewPooledMarshaller(cborAtlas)
+	r.Unmarshaller = encoding.NewPooledUnmarshaller(cborAtlas)
 }
 
 // registerCborType allows to register a custom cbor type
-func registerCborType(i interface{}) {
+func (r *Refmt) RegisterCborType(i interface{}) {
 	var entry *atlas.AtlasEntry
 	if ae, ok := i.(*atlas.AtlasEntry); ok {
 		entry = ae
 	} else {
 		entry = atlas.BuildEntry(i).StructMap().AutogenerateWithSortingScheme(atlas.KeySortMode_RFC7049).Complete()
 	}
-	atlasEntries = append(atlasEntries, entry)
-	rebuildAtlas()
+	r.atlasEntries = append(r.atlasEntries, entry)
+	r.RebuildAlts()
 }
 
 // From: https://github.com/ipfs/go-ipld-cbor/blob/821d2db12599a4c79963e2c7988f2d77c8e19c7e/node.go

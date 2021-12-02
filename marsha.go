@@ -57,6 +57,8 @@ type Marsha interface {
 	NewDecoder(r io.Reader) Decoder
 }
 
+// An Encoder manages the transmission of type and data information to the other side of a connection.
+// It is safe for concurrent use by multiple goroutines.
 type Encoder interface {
 	// EncodePrimitive marshals and transmits the primitive value/slice `p` points to,
 	// guaranteeing that all necessary type information has been transmitted first.

@@ -26,5 +26,4 @@ func TestSpecial(t *testing.T) {
 		err = mer.UnmarshalStruct(bin, s2)
 		asrt.Equal(cborgen.ErrTypeNotMatch, err)
 	})
-
 }

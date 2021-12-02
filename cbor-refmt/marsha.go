@@ -7,12 +7,13 @@ import (
 	"sync"
 
 	"github.com/daotl/go-marsha"
+	"github.com/daotl/go-marsha/internal/refmt"
 )
 
-// Marsha is a Marsha implementation for CBOR backed by `go-ipld-cbor` and `refmt` packages.
+// Marsha is a marsha.Marsha implementation for CBOR backed by `go-ipld-cbor` and `refmt` packages.
 //
-// A Struct must first be registered by calling Marsha.Register(Struct{}) before being
-// able to be marshaled/unmarshaled.
+// A Struct must first be registered by calling Marsha.Register(Struct{}) before being able to be
+// marshaled/unmarshaled.
 //
 // Marshaling/unmarshaling can be customized by `refmt` tags:
 //
@@ -20,88 +21,90 @@ import (
 //   	Foo string `refmt:"bar,omitempty"`
 //   }
 //
-type Marsha struct{}
+type Marsha struct {
+	refmt *refmt.Refmt
+}
 
 var _ marsha.Marsha = (*Marsha)(nil)
 
 // New creates a Marsha.
 func New() *Marsha {
-	return &Marsha{}
+	return &Marsha{
+		refmt: refmt.New(),
+	}
 }
 
 // Register a Struct type by passing empty a Struct.
 func (m *Marsha) Register(i interface{}) {
-	registerCborType(i)
+	m.refmt.RegisterCborType(i)
 }
 
 func (m *Marsha) MarshalPrimitive(p interface{}) ([]byte, error) {
-	return marshaller.Marshal(p)
+	return m.refmt.Marshaller.Marshal(p)
 }
 
 func (m *Marsha) MarshalStruct(p marsha.StructPtr) ([]byte, error) {
-	return marshaller.Marshal(p)
+	return m.refmt.Marshaller.Marshal(p)
 }
 
 func (m *Marsha) MarshalStructSlice(p marsha.StructSlicePtr) ([]byte, error) {
-	return marshaller.Marshal(p)
+	return m.refmt.Marshaller.Marshal(p)
 }
 
 func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) error {
-	return unmarshaller.Unmarshal(bin, p)
+	return m.refmt.Unmarshaller.Unmarshal(bin, p)
 }
 
 func (m *Marsha) UnmarshalPrimitive(bin []byte, p interface{}) error {
-	return unmarshaller.Unmarshal(bin, p)
+	return m.refmt.Unmarshaller.Unmarshal(bin, p)
 }
 
 func (m *Marsha) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) error {
-	return unmarshaller.Unmarshal(bin, p)
+	return m.refmt.Unmarshaller.Unmarshal(bin, p)
 }
 
-// Not implemented
 func (m *Marsha) NewEncoder(w io.Writer) marsha.Encoder {
-	enc := new(encoder)
-	enc.w = w
-	return enc
-}
-
-// Not implemented
-func (m *Marsha) NewDecoder(r io.Reader) marsha.Decoder {
-	return &decoder{
-		r: r,
+	return &encoder{
+		refmt: m.refmt,
+		w:     w,
 	}
 }
 
-// An encoder manages the transmission of type and data information to the
-// other side of a connection.  It is safe for concurrent use by multiple
-// goroutines.
+func (m *Marsha) NewDecoder(r io.Reader) marsha.Decoder {
+	return &decoder{
+		refmt: m.refmt,
+		r:     r,
+	}
+}
+
 type encoder struct {
-	sync.Mutex           // each item must be sent atomically
-	w          io.Writer // where to send the data
+	sync.Mutex // each item must be sent atomically
+	refmt      *refmt.Refmt
+	w          io.Writer
 }
 
-func (enc *encoder) EncodePrimitive(p interface{}) error {
-	return enc.encode(p)
+func (e *encoder) EncodePrimitive(p interface{}) error {
+	return e.encode(p)
 }
-func (enc *encoder) EncodeStruct(p marsha.StructPtr) error {
-	return enc.encode(p)
+func (e *encoder) EncodeStruct(p marsha.StructPtr) error {
+	return e.encode(p)
 }
-func (enc *encoder) EncodeStructSlice(p marsha.StructSlicePtr) error {
-	return enc.encode(p)
+func (e *encoder) EncodeStructSlice(p marsha.StructSlicePtr) error {
+	return e.encode(p)
 }
 
-func (enc *encoder) encode(p interface{}) error {
+func (e *encoder) encode(p interface{}) error {
 	// Make sure we're single-threaded through here, so multiple
 	// goroutines can share an encoder.
-	enc.Lock()
-	defer enc.Unlock()
-
-	return marshaller.Encode(p, enc.w)
+	e.Lock()
+	defer e.Unlock()
+	return e.refmt.Marshaller.Encode(p, e.w)
 }
 
 type decoder struct {
-	sync.Mutex           // each item must be sent atomically
-	r          io.Reader // where to receive the data
+	sync.Mutex // each item must be sent atomically
+	refmt      *refmt.Refmt
+	r          io.Reader
 }
 
 func (d *decoder) DecodePrimitive(p interface{}) error {
@@ -118,9 +121,8 @@ func (d *decoder) DecodeStructSlice(p marsha.StructSlicePtr) error {
 
 func (d *decoder) decode(p interface{}) error {
 	// Make sure we're single-threaded through here, so multiple
-	// goroutines can share an encoder.
+	// goroutines can share a decoder.
 	d.Lock()
 	defer d.Unlock()
-
-	return unmarshaller.Decode(d.r, p)
+	return d.refmt.Unmarshaller.Decode(d.r, p)
 }
