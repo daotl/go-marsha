@@ -28,45 +28,45 @@ func getFunctionName(i interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
 
-func SubTestBasic(t *testing.T, mer marsha.Marsha) {
+func SubTestBasic(t *testing.T, mrsh marsha.Marsha) {
 	asrt := assert.New(t)
 	s := &TestStruct{"test"}
 	ss := &TestStructs{TestStruct{"test"}, TestStruct{"test2"}}
 
 	t.Run("MarshalPrimitive/Unmarshal primitives", func(t *testing.T) {
 		v1 := 52
-		bin, err := mer.MarshalPrimitive(&v1)
+		bin, err := mrsh.MarshalPrimitive(&v1)
 		asrt.NoError(err)
 		v2 := 0
-		err = mer.UnmarshalPrimitive(bin, &v2)
+		err = mrsh.UnmarshalPrimitive(bin, &v2)
 		asrt.NoError(err)
 		asrt.Equal(v1, v2)
 	})
 
 	t.Run("MarshalPrimitive/Unmarshal primitive slices", func(t *testing.T) {
 		s1 := []int{4, 13}
-		bin, err := mer.MarshalPrimitive(&s1)
+		bin, err := mrsh.MarshalPrimitive(&s1)
 		asrt.NoError(err)
 		var s2 []int
-		err = mer.UnmarshalPrimitive(bin, &s2)
+		err = mrsh.UnmarshalPrimitive(bin, &s2)
 		asrt.NoError(err)
 		asrt.Equal(s1, s2)
 	})
 
 	t.Run("MarshalStruct/Unmarshal", func(t *testing.T) {
-		bin, err := mer.MarshalStruct(s)
+		bin, err := mrsh.MarshalStruct(s)
 		asrt.NoError(err)
 		s2 := &TestStruct{}
-		err = mer.UnmarshalStruct(bin, s2)
+		err = mrsh.UnmarshalStruct(bin, s2)
 		asrt.NoError(err)
 		asrt.Equal(s.Data, s2.Data)
 	})
 
 	t.Run("MarshalStructSlice/Unmarshal", func(t *testing.T) {
-		bin, err := mer.MarshalStructSlice(ss)
+		bin, err := mrsh.MarshalStructSlice(ss)
 		asrt.NoError(err)
 		ss2 := &TestStructs{}
-		err = mer.UnmarshalStructSlice(bin, ss2)
+		err = mrsh.UnmarshalStructSlice(bin, ss2)
 		asrt.NoError(err)
 		asrt.Equal(ss, ss2)
 	})
