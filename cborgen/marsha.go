@@ -88,7 +88,7 @@ func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) error {
 	if !ok {
 		return ErrNotCBORStructPtr
 	}
-	return m.unmarshal(bytes.NewReader(bin), cbp)
+	return unmarshal(bytes.NewReader(bin), cbp)
 }
 
 func (m *Marsha) MarshalStructSlice(p marsha.StructSlicePtr) (bin []byte, err error) {
@@ -128,25 +128,15 @@ func (m *Marsha) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) error
 		if !ok {
 			return ErrNotCBORStructPtr
 		}
-		if err := m.unmarshal(r, s); err != nil {
-			if err == ErrTypeNotMatch {
-				return err
+		if err := unmarshal(r, s); err != nil {
+			if err.Error() == "EOF" {
+				break
 			}
-			break
+			return err
 		}
 		cbp.Append(s)
 	}
 	return nil
-}
-
-func (m *Marsha) unmarshal(r io.Reader, p StructPtr) (err error) {
-	if err = p.UnmarshalCBOR(r); err != nil {
-		estr := err.Error()
-		if strings.Contains(estr, "wrong type") {
-			err = ErrTypeNotMatch
-		}
-	}
-	return err
 }
 
 func (m *Marsha) NewEncoder(w io.Writer) marsha.Encoder {
@@ -229,7 +219,7 @@ func (d *decoder) DecodeStruct(p marsha.StructPtr) error {
 	}
 	d.Lock()
 	defer d.Unlock()
-	return d.unmarshal(d.r, cbp)
+	return unmarshal(d.r, cbp)
 }
 
 func (d *decoder) DecodeStructSlice(p marsha.StructSlicePtr) error {
@@ -245,22 +235,20 @@ func (d *decoder) DecodeStructSlice(p marsha.StructSlicePtr) error {
 		if !ok {
 			return ErrNotCBORStructPtr
 		}
-		if err := d.unmarshal(d.r, s); err != nil {
-			if err == ErrTypeNotMatch {
-				return err
+		if err := unmarshal(d.r, s); err != nil {
+			if err.Error() == "EOF" {
+				break
 			}
-			break
+			return err
 		}
 		cbp.Append(s)
 	}
 	return nil
 }
 
-// unmarshal is called during d.Lock()
-func (d *decoder) unmarshal(r io.Reader, p StructPtr) (err error) {
+func unmarshal(r io.Reader, p StructPtr) (err error) {
 	if err = p.UnmarshalCBOR(r); err != nil {
-		estr := err.Error()
-		if strings.Contains(estr, "wrong type") {
+		if strings.Contains(err.Error(), "wrong type") {
 			err = ErrTypeNotMatch
 		}
 	}
