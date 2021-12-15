@@ -3,7 +3,7 @@ module github.com/daotl/go-marsha
 go 1.17
 
 require (
-	github.com/daotl/cbor-gen v0.0.5
+	github.com/daotl/cbor-gen v0.0.6
 	github.com/golang/protobuf v1.5.2
 	github.com/ipfs/go-cid v0.0.6
 	github.com/ipfs/go-ipld-cbor v0.0.5

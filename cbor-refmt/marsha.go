@@ -51,16 +51,19 @@ func (m *Marsha) MarshalStructSlice(p marsha.StructSlicePtr) ([]byte, error) {
 	return m.refmt.Marshaller.Marshal(p)
 }
 
-func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) error {
-	return m.refmt.Unmarshaller.Unmarshal(bin, p)
+// This implementation does not support returning the count of bytes read.
+func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) (int, error) {
+	return -1, m.refmt.Unmarshaller.Unmarshal(bin, p)
 }
 
-func (m *Marsha) UnmarshalPrimitive(bin []byte, p interface{}) error {
-	return m.refmt.Unmarshaller.Unmarshal(bin, p)
+// This implementation does not support returning the count of bytes read.
+func (m *Marsha) UnmarshalPrimitive(bin []byte, p interface{}) (int, error) {
+	return -1, m.refmt.Unmarshaller.Unmarshal(bin, p)
 }
 
-func (m *Marsha) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) error {
-	return m.refmt.Unmarshaller.Unmarshal(bin, p)
+// This implementation does not support returning the count of bytes read.
+func (m *Marsha) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) (int, error) {
+	return -1, m.refmt.Unmarshaller.Unmarshal(bin, p)
 }
 
 func (m *Marsha) NewEncoder(w io.Writer) marsha.Encoder {
@@ -107,16 +110,19 @@ type decoder struct {
 	r          io.Reader
 }
 
-func (d *decoder) DecodePrimitive(p interface{}) error {
-	return d.decode(p)
+// This implementation does not support returning the count of bytes read.
+func (d *decoder) DecodePrimitive(p interface{}) (int, error) {
+	return -1, d.decode(p)
 }
 
-func (d *decoder) DecodeStruct(p marsha.StructPtr) error {
-	return d.decode(p)
+// This implementation does not support returning the count of bytes read.
+func (d *decoder) DecodeStruct(p marsha.StructPtr) (int, error) {
+	return -1, d.decode(p)
 }
 
-func (d *decoder) DecodeStructSlice(p marsha.StructSlicePtr) error {
-	return d.decode(p)
+// This implementation does not support returning the count of bytes read.
+func (d *decoder) DecodeStructSlice(p marsha.StructSlicePtr) (int, error) {
+	return -1, d.decode(p)
 }
 
 func (d *decoder) decode(p interface{}) error {

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/daotl/go-marsha"
 )
@@ -29,6 +30,7 @@ func getFunctionName(i interface{}) string {
 }
 
 func SubTestBasic(t *testing.T, mrsh marsha.Marsha) {
+	req := require.New(t)
 	asrt := assert.New(t)
 	s := &TestStruct{"test"}
 	ss := &TestStructs{TestStruct{"test"}, TestStruct{"test2"}}
@@ -36,85 +38,127 @@ func SubTestBasic(t *testing.T, mrsh marsha.Marsha) {
 	t.Run("MarshalPrimitive/Unmarshal primitives", func(t *testing.T) {
 		v1 := 52
 		bin, err := mrsh.MarshalPrimitive(&v1)
-		asrt.NoError(err)
+		req.NoError(err)
 		v2 := 0
-		err = mrsh.UnmarshalPrimitive(bin, &v2)
-		asrt.NoError(err)
+		read, err := mrsh.UnmarshalPrimitive(bin, &v2)
+		req.NoError(err)
 		asrt.Equal(v1, v2)
+		if read != -1 {
+			asrt.Equal(len(bin), read)
+		}
 	})
 
 	t.Run("MarshalPrimitive/Unmarshal primitive slices", func(t *testing.T) {
 		s1 := []int{4, 13}
 		bin, err := mrsh.MarshalPrimitive(&s1)
-		asrt.NoError(err)
+		req.NoError(err)
 		var s2 []int
-		err = mrsh.UnmarshalPrimitive(bin, &s2)
-		asrt.NoError(err)
+		read, err := mrsh.UnmarshalPrimitive(bin, &s2)
+		req.NoError(err)
 		asrt.Equal(s1, s2)
+		if read != -1 {
+			asrt.Equal(len(bin), read)
+		}
 	})
 
 	t.Run("MarshalStruct/Unmarshal", func(t *testing.T) {
 		bin, err := mrsh.MarshalStruct(s)
-		asrt.NoError(err)
+		req.NoError(err)
 		s2 := &TestStruct{}
-		err = mrsh.UnmarshalStruct(bin, s2)
-		asrt.NoError(err)
+		read, err := mrsh.UnmarshalStruct(bin, s2)
+		req.NoError(err)
 		asrt.Equal(s.Data, s2.Data)
+		if read != -1 {
+			asrt.Equal(len(bin), read)
+		}
 	})
 
 	t.Run("MarshalStructSlice/Unmarshal", func(t *testing.T) {
 		bin, err := mrsh.MarshalStructSlice(ss)
-		asrt.NoError(err)
+		req.NoError(err)
 		ss2 := &TestStructs{}
-		err = mrsh.UnmarshalStructSlice(bin, ss2)
-		asrt.NoError(err)
+		read, err := mrsh.UnmarshalStructSlice(bin, ss2)
+		req.NoError(err)
 		asrt.Equal(ss, ss2)
+		if read != -1 {
+			asrt.Equal(len(bin), read)
+		}
 	})
 }
 
 func SubTestEncoderDecoder(t *testing.T, m marsha.Marsha) {
+	req := require.New(t)
 	asrt := assert.New(t)
-	var network bytes.Buffer
-	enc := m.NewEncoder(&network)
-	dec := m.NewDecoder(&network)
 	s := &TestStruct{"test"}
 	ss := &TestStructs{TestStruct{"test"}, TestStruct{"test2"}}
 
 	t.Run("MarshalPrimitive/Unmarshal primitives", func(t *testing.T) {
+		var buf bytes.Buffer
+		enc := m.NewEncoder(&buf)
+		dec := m.NewDecoder(&buf)
+
 		v1 := 52
 		err := enc.EncodePrimitive(&v1)
-		asrt.NoError(err)
+		req.NoError(err)
+		bin := buf.Bytes()
 		v2 := 0
-		err = dec.DecodePrimitive(&v2)
-		asrt.NoError(err)
+		read, err := dec.DecodePrimitive(&v2)
+		req.NoError(err)
 		asrt.Equal(v1, v2)
+		if read != -1 {
+			asrt.Equal(len(bin), read)
+		}
 	})
 
 	t.Run("MarshalPrimitive/Unmarshal primitive slices", func(t *testing.T) {
+		var buf bytes.Buffer
+		enc := m.NewEncoder(&buf)
+		dec := m.NewDecoder(&buf)
+
 		s1 := []int{4, 13}
 		err := enc.EncodePrimitive(&s1)
-		asrt.NoError(err)
+		req.NoError(err)
+		bin := buf.Bytes()
 		var s2 []int
-		err = dec.DecodePrimitive(&s2)
-		asrt.NoError(err)
+		read, err := dec.DecodePrimitive(&s2)
+		req.NoError(err)
 		asrt.Equal(s1, s2)
+		if read != -1 {
+			asrt.Equal(len(bin), read)
+		}
 	})
 
 	t.Run("MarshalStruct/Unmarshal", func(t *testing.T) {
+		var buf bytes.Buffer
+		enc := m.NewEncoder(&buf)
+		dec := m.NewDecoder(&buf)
+
 		err := enc.EncodeStruct(s)
-		asrt.NoError(err)
+		req.NoError(err)
+		bin := buf.Bytes()
 		s2 := &TestStruct{}
-		err = dec.DecodeStruct(s2)
-		asrt.NoError(err)
+		read, err := dec.DecodeStruct(s2)
+		req.NoError(err)
 		asrt.Equal(s.Data, s2.Data)
+		if read != -1 {
+			asrt.Equal(len(bin), read)
+		}
 	})
 
 	t.Run("MarshalStructSlice/Unmarshal", func(t *testing.T) {
+		var buf bytes.Buffer
+		enc := m.NewEncoder(&buf)
+		dec := m.NewDecoder(&buf)
+
 		err := enc.EncodeStructSlice(ss)
-		asrt.NoError(err)
+		req.NoError(err)
+		bin := buf.Bytes()
 		ss2 := &TestStructs{}
-		err = dec.DecodeStructSlice(ss2)
-		asrt.NoError(err)
+		read, err := dec.DecodeStructSlice(ss2)
+		req.NoError(err)
 		asrt.Equal(ss, ss2)
+		if read != -1 {
+			asrt.Equal(len(bin), read)
+		}
 	})
 }

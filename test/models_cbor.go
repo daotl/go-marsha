@@ -51,36 +51,39 @@ func (t *TestStruct) MarshalCBOR(w io.Writer) error {
 	return nil
 }
 
-func (t *TestStruct) UnmarshalCBOR(r io.Reader) error {
+func (t *TestStruct) UnmarshalCBOR(r io.Reader) (int, error) {
+	bytesRead := 0
 	*t = TestStruct{}
 	t.InitNilEmbeddedStruct()
 
 	br := cbg.GetPeeker(r)
 	scratch := make([]byte, 8)
 
-	maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+	maj, extra, read, err := cbg.CborReadHeaderBuf(br, scratch)
 	if err != nil {
-		return err
+		return bytesRead, err
 	}
+	bytesRead += read
 	if maj != cbg.MajArray {
-		return fmt.Errorf("cbor input should be of type array")
+		return bytesRead, fmt.Errorf("cbor input should be of type array")
 	}
 
 	if extra != 1 {
-		return fmt.Errorf("cbor input had wrong number of fields")
+		return bytesRead, fmt.Errorf("cbor input had wrong number of fields")
 	}
 
 	// t.Data (string) (string)
 
 	{
-		sval, err := cbg.ReadStringBuf(br, scratch)
+		sval, read, err := cbg.ReadStringBuf(br, scratch)
 		if err != nil {
-			return err
+			return bytesRead, err
 		}
+		bytesRead += read
 
 		t.Data = string(sval)
 	}
-	return nil
+	return bytesRead, nil
 }
 
 func (t *TestStruct2) InitNilEmbeddedStruct() {
@@ -115,49 +118,52 @@ func (t *TestStruct2) MarshalCBOR(w io.Writer) error {
 	return nil
 }
 
-func (t *TestStruct2) UnmarshalCBOR(r io.Reader) error {
+func (t *TestStruct2) UnmarshalCBOR(r io.Reader) (int, error) {
+	bytesRead := 0
 	*t = TestStruct2{}
 	t.InitNilEmbeddedStruct()
 
 	br := cbg.GetPeeker(r)
 	scratch := make([]byte, 8)
 
-	maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+	maj, extra, read, err := cbg.CborReadHeaderBuf(br, scratch)
 	if err != nil {
-		return err
+		return bytesRead, err
 	}
+	bytesRead += read
 	if maj != cbg.MajArray {
-		return fmt.Errorf("cbor input should be of type array")
+		return bytesRead, fmt.Errorf("cbor input should be of type array")
 	}
 
 	if extra != 1 {
-		return fmt.Errorf("cbor input had wrong number of fields")
+		return bytesRead, fmt.Errorf("cbor input had wrong number of fields")
 	}
 
 	// t.Data2 (int64) (int64)
 	{
-		maj, extra, err := cbg.CborReadHeaderBuf(br, scratch)
+		maj, extra, read, err := cbg.CborReadHeaderBuf(br, scratch)
 		var extraI int64
 		if err != nil {
-			return err
+			return bytesRead, err
 		}
+		bytesRead += read
 		switch maj {
 		case cbg.MajUnsignedInt:
 			extraI = int64(extra)
 			if extraI < 0 {
-				return fmt.Errorf("int64 positive overflow")
+				return bytesRead, fmt.Errorf("int64 positive overflow")
 			}
 		case cbg.MajNegativeInt:
 			extraI = int64(extra)
 			if extraI < 0 {
-				return fmt.Errorf("int64 negative oveflow")
+				return bytesRead, fmt.Errorf("int64 negative oveflow")
 			}
 			extraI = -1 - extraI
 		default:
-			return fmt.Errorf("wrong type for int64 field: %d", maj)
+			return bytesRead, fmt.Errorf("wrong type for int64 field: %d", maj)
 		}
 
 		t.Data2 = int64(extraI)
 	}
-	return nil
+	return bytesRead, nil
 }

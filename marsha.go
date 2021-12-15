@@ -35,20 +35,23 @@ type Marsha interface {
 	// MarshalPrimitive marshals the primitive value/slice `p` points to into bytes.
 	MarshalPrimitive(p interface{}) ([]byte, error)
 
-	// UnmarshalPrimitive unmarshals bytes `bin` into the primitive value/slice `p` points to.
-	UnmarshalPrimitive(bin []byte, p interface{}) error
+	// UnmarshalPrimitive unmarshals bytes `bin` into the primitive value/slice `p` points to and
+	// return the count of bytes read or -1 if the implementation does not support it.
+	UnmarshalPrimitive(bin []byte, p interface{}) (int, error)
 
 	// MarshalStruct marshals the struct `p` points to into bytes.
 	MarshalStruct(p StructPtr) ([]byte, error)
 
-	// UnmarshalStruct unmarshals bytes `bin` into the struct `p` points to.
-	UnmarshalStruct(bin []byte, p StructPtr) error
+	// UnmarshalStruct unmarshals bytes `bin` into the struct `p` points to and return the count of
+	// bytes read or -1 if the implementation does not support it.
+	UnmarshalStruct(bin []byte, p StructPtr) (int, error)
 
 	// MarshalStructSlice marshals the struct slice `p` points to into bytes.
 	MarshalStructSlice(p StructSlicePtr) ([]byte, error)
 
-	// UnmarshalStructSlice unmarshals bytes `bin` into the struct slice `p` points to.
-	UnmarshalStructSlice(bin []byte, p StructSlicePtr) error
+	// UnmarshalStructSlice unmarshals bytes `bin` into the struct slice `p` points to and return
+	// the count of bytes read or -1 if the implementation does not support it.
+	UnmarshalStructSlice(bin []byte, p StructSlicePtr) (int, error)
 
 	// NewEncoder returns a new encoder that will transmit on the io.Writer.
 	NewEncoder(w io.Writer) Encoder
@@ -80,20 +83,23 @@ type Encoder interface {
 // Take caution when decoding data from untrusted sources.
 type Decoder interface {
 	// DecodePrimitive reads the next value from the input stream and stores it in the value/slice
-	// `p` points to. If `p` is nil, the value will be discarded. Otherwise, the value
-	// underlying `p` must be a pointer to the correct type for the next data item received.
+	// `p` points to and return the count of bytes read or -1 if the implementation does not support it.
+	// If `p` is nil, the value will be discarded. Otherwise, the value underlying `p` must be a
+	// pointer to the correct type for the next data item received.
 	// If the input is at EOF, Decode returns io.EOF and does not modify p.
-	DecodePrimitive(p interface{}) error
+	DecodePrimitive(p interface{}) (int, error)
 
 	// DecodeStruct reads the next value from the input stream and stores it in the struct `p`
-	// points to. If `p` is nil, the value will be discarded. Otherwise, the value
-	// underlying `p` must be a pointer to the correct type for the next data item received.
+	// points to and return the count of bytes read or -1 if the implementation does not support it.
+	// If `p` is nil, the value will be discarded. Otherwise, the value underlying `p` must be a
+	// pointer to the correct type for the next data item received.
 	// If the input is at EOF, Decode returns io.EOF and does not modify p.
-	DecodeStruct(p StructPtr) error
+	DecodeStruct(p StructPtr) (int, error)
 
 	// DecodeStructSlice reads the next value from the input stream and stores it in the struct slice
-	// `p` points to. If `p` is nil, the value will be discarded. Otherwise, the value
-	// underlying `p` must be a pointer to the correct type for the next data item received.
+	// `p` points to and return the count of bytes read or -1 if the implementation does not support it.
+	// If `p` is nil, the value will be discarded. Otherwise, the value underlying `p` must be a
+	// pointer to the correct type for the next data item received.
 	// If the input is at EOF, Decode returns io.EOF and does not modify p.
-	DecodeStructSlice(p StructSlicePtr) error
+	DecodeStructSlice(p StructSlicePtr) (int, error)
 }

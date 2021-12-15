@@ -54,8 +54,8 @@ func (m *Marsha) MarshalPrimitive(_ interface{}) ([]byte, error) {
 }
 
 // Not implemented
-func (m *Marsha) UnmarshalPrimitive(_ []byte, _ interface{}) error {
-	return marsha.ErrUnimplemented
+func (m *Marsha) UnmarshalPrimitive(_ []byte, _ interface{}) (int, error) {
+	return -1, marsha.ErrUnimplemented
 }
 
 func (m *Marsha) MarshalStruct(p marsha.StructPtr) ([]byte, error) {
@@ -66,7 +66,7 @@ func (m *Marsha) MarshalStruct(p marsha.StructPtr) ([]byte, error) {
 	return proto.Marshal(pbp.PB())
 }
 
-func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) (err error) {
+func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) (read int, err error) {
 	// Recover if type assertion in LoadPB fails
 	defer func() {
 		if r := recover(); r != nil {
@@ -85,14 +85,14 @@ func (m *Marsha) UnmarshalStruct(bin []byte, p marsha.StructPtr) (err error) {
 
 	pbp, ok := p.(StructPtr)
 	if !ok {
-		return ErrNotPBStructPtr
+		return -1, ErrNotPBStructPtr
 	}
 	pb := pbp.EmptyPB()
 	err = proto.Unmarshal(bin, pb)
 	if err == nil {
 		err = pbp.LoadPB(pb)
 	}
-	return
+	return -1, nil
 }
 
 // Not implemented
@@ -101,8 +101,8 @@ func (m *Marsha) MarshalStructSlice(_ marsha.StructSlicePtr) ([]byte, error) {
 }
 
 // Not implemented
-func (m *Marsha) UnmarshalStructSlice(_ []byte, _ marsha.StructSlicePtr) error {
-	return marsha.ErrUnimplemented
+func (m *Marsha) UnmarshalStructSlice(_ []byte, _ marsha.StructSlicePtr) (int, error) {
+	return -1, marsha.ErrUnimplemented
 }
 
 // Not implemented
