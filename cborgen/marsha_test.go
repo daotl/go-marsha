@@ -11,21 +11,21 @@ import (
 )
 
 func TestMarsha(t *testing.T) {
-	mer := cborgen.New()
-	test.SubTestAll(t, mer)
+	mrsh := cborgen.New()
+	test.SubTestAll(t, mrsh)
 }
 
 func TestSpecial(t *testing.T) {
 	req := require.New(t)
 	asrt := assert.New(t)
-	mer := cborgen.New()
+	mrsh := cborgen.New()
 	s := &test.TestStruct{Data: "test"}
 
 	t.Run("UnmarshalStruct error: model type does not match", func(t *testing.T) {
-		bin, err := mer.MarshalStruct(s)
+		bin, err := mrsh.MarshalStruct(s)
 		req.NoError(err)
 		s2 := &test.TestStruct2{}
-		_, err = mer.UnmarshalStruct(bin, s2)
+		_, err = mrsh.UnmarshalStruct(bin, s2)
 		asrt.Equal(cborgen.ErrTypeNotMatch, err)
 	})
 }

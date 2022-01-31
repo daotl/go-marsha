@@ -86,14 +86,19 @@ type encoder struct {
 	w          io.Writer
 }
 
-func (e *encoder) EncodePrimitive(p interface{}) error {
-	return e.encode(p)
+// This implementation does not support returning the count of bytes written.
+func (e *encoder) EncodePrimitive(p interface{}) (int, error) {
+	return -1, e.encode(p)
 }
-func (e *encoder) EncodeStruct(p marsha.StructPtr) error {
-	return e.encode(p)
+
+// This implementation does not support returning the count of bytes written.
+func (e *encoder) EncodeStruct(p marsha.StructPtr) (int, error) {
+	return -1, e.encode(p)
 }
-func (e *encoder) EncodeStructSlice(p marsha.StructSlicePtr) error {
-	return e.encode(p)
+
+// This implementation does not support returning the count of bytes written.
+func (e *encoder) EncodeStructSlice(p marsha.StructSlicePtr) (int, error) {
+	return -1, e.encode(p)
 }
 
 func (e *encoder) encode(p interface{}) error {

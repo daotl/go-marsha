@@ -42,7 +42,7 @@ type Marsha interface {
 	// MarshalStruct marshals the struct `p` points to into bytes.
 	MarshalStruct(p StructPtr) ([]byte, error)
 
-	// UnmarshalStruct unmarshals bytes `bin` into the struct `p` points to and return the count of
+	// UnmarshalStruct unmarshals bytes `bin` into the struct `p` points to and returns the count of
 	// bytes read or -1 if the implementation does not support it.
 	UnmarshalStruct(bin []byte, p StructPtr) (int, error)
 
@@ -65,15 +65,18 @@ type Marsha interface {
 type Encoder interface {
 	// EncodePrimitive marshals and transmits the primitive value/slice `p` points to,
 	// guaranteeing that all necessary type information has been transmitted first.
-	EncodePrimitive(p interface{}) error
+	// It returns the count of bytes written or -1 if the implementation does not support it.
+	EncodePrimitive(p interface{}) (int, error)
 
 	// EncodeStruct marshals and transmits the struct `p` points to,
 	// Guaranteeing that all necessary type information has been transmitted first.
-	EncodeStruct(p StructPtr) error
+	// It returns the count of bytes written or -1 if the implementation does not support it.
+	EncodeStruct(p StructPtr) (int, error)
 
 	// EncodeStructSlice marshals and transmits the struct slice `p` points to,
 	// Guaranteeing that all necessary type information has been transmitted first.
-	EncodeStructSlice(p StructSlicePtr) error
+	// It returns the count of bytes written or -1 if the implementation does not support it.
+	EncodeStructSlice(p StructSlicePtr) (int, error)
 }
 
 // A Decoder manages the receipt of type and data information read from the remote side of a connection.
@@ -83,21 +86,21 @@ type Encoder interface {
 // Take caution when decoding data from untrusted sources.
 type Decoder interface {
 	// DecodePrimitive reads the next value from the input stream and stores it in the value/slice
-	// `p` points to and return the count of bytes read or -1 if the implementation does not support it.
+	// `p` points to and returns the count of bytes read or -1 if the implementation does not support it.
 	// If `p` is nil, the value will be discarded. Otherwise, the value underlying `p` must be a
 	// pointer to the correct type for the next data item received.
 	// If the input is at EOF, Decode returns io.EOF and does not modify p.
 	DecodePrimitive(p interface{}) (int, error)
 
 	// DecodeStruct reads the next value from the input stream and stores it in the struct `p`
-	// points to and return the count of bytes read or -1 if the implementation does not support it.
+	// points to and returns the count of bytes read or -1 if the implementation does not support it.
 	// If `p` is nil, the value will be discarded. Otherwise, the value underlying `p` must be a
 	// pointer to the correct type for the next data item received.
 	// If the input is at EOF, Decode returns io.EOF and does not modify p.
 	DecodeStruct(p StructPtr) (int, error)
 
 	// DecodeStructSlice reads the next value from the input stream and stores it in the struct slice
-	// `p` points to and return the count of bytes read or -1 if the implementation does not support it.
+	// `p` points to and returns the count of bytes read or -1 if the implementation does not support it.
 	// If `p` is nil, the value will be discarded. Otherwise, the value underlying `p` must be a
 	// pointer to the correct type for the next data item received.
 	// If the input is at EOF, Decode returns io.EOF and does not modify p.

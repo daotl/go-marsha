@@ -22,7 +22,8 @@ func (s *TestStructs) Val() []marsha.StructPtr {
 	return models
 }
 func (*TestStructs) NewStructPtr() marsha.StructPtr { return &TestStruct{} }
-func (s *TestStructs) Append(m cborgen.StructPtr)   { *s = append(*s, *(m.(*TestStruct))) }
+
+func (s *TestStructs) Append(m cborgen.StructPtr) { *s = append(*s, *(m.(*TestStruct))) }
 
 type TestStruct2 struct {
 	Data2 int64

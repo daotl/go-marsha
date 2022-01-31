@@ -98,9 +98,13 @@ func SubTestEncoderDecoder(t *testing.T, m marsha.Marsha) {
 		dec := m.NewDecoder(&buf)
 
 		v1 := 52
-		err := enc.EncodePrimitive(&v1)
+		n, err := enc.EncodePrimitive(&v1)
 		req.NoError(err)
 		bin := buf.Bytes()
+		if n != -1 {
+			asrt.Equal(len(bin), n)
+		}
+
 		v2 := 0
 		read, err := dec.DecodePrimitive(&v2)
 		req.NoError(err)
@@ -116,9 +120,13 @@ func SubTestEncoderDecoder(t *testing.T, m marsha.Marsha) {
 		dec := m.NewDecoder(&buf)
 
 		s1 := []int{4, 13}
-		err := enc.EncodePrimitive(&s1)
+		n, err := enc.EncodePrimitive(&s1)
 		req.NoError(err)
 		bin := buf.Bytes()
+		if n != -1 {
+			asrt.Equal(len(bin), n)
+		}
+
 		var s2 []int
 		read, err := dec.DecodePrimitive(&s2)
 		req.NoError(err)
@@ -133,9 +141,13 @@ func SubTestEncoderDecoder(t *testing.T, m marsha.Marsha) {
 		enc := m.NewEncoder(&buf)
 		dec := m.NewDecoder(&buf)
 
-		err := enc.EncodeStruct(s)
+		n, err := enc.EncodeStruct(s)
 		req.NoError(err)
 		bin := buf.Bytes()
+		if n != -1 {
+			asrt.Equal(len(bin), n)
+		}
+
 		s2 := &TestStruct{}
 		read, err := dec.DecodeStruct(s2)
 		req.NoError(err)
@@ -150,9 +162,13 @@ func SubTestEncoderDecoder(t *testing.T, m marsha.Marsha) {
 		enc := m.NewEncoder(&buf)
 		dec := m.NewDecoder(&buf)
 
-		err := enc.EncodeStructSlice(ss)
+		n, err := enc.EncodeStructSlice(ss)
 		req.NoError(err)
 		bin := buf.Bytes()
+		if n != -1 {
+			asrt.Equal(len(bin), n)
+		}
+
 		ss2 := &TestStructs{}
 		read, err := dec.DecodeStructSlice(ss2)
 		req.NoError(err)

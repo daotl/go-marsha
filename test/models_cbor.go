@@ -25,30 +25,35 @@ func (t *TestStruct) InitNilEmbeddedStruct() {
 
 var lengthBufTestStruct = []byte{129}
 
-func (t *TestStruct) MarshalCBOR(w io.Writer) error {
+func (t *TestStruct) MarshalCBOR(w io.Writer) (n int, err error) {
 	if t == nil {
-		_, err := w.Write(cbg.CborNull)
-		return err
+		return w.Write(cbg.CborNull)
 	}
 	t.InitNilEmbeddedStruct()
-	if _, err := w.Write(lengthBufTestStruct); err != nil {
-		return err
+	if n_, err := w.Write(lengthBufTestStruct); err != nil {
+		return n_, err
+	} else {
+		n += n_
 	}
 
 	scratch := make([]byte, 9)
 
 	// t.Data (string) (string)
 	if len(t.Data) > cbg.MaxLength {
-		return xerrors.Errorf("Value in field t.Data was too long")
+		return n, xerrors.Errorf("Value in field t.Data was too long")
 	}
 
-	if err := cbg.WriteMajorTypeHeaderBuf(scratch, w, cbg.MajTextString, uint64(len(t.Data))); err != nil {
-		return err
+	if n_, err := cbg.WriteMajorTypeHeaderBuf(scratch, w, cbg.MajTextString, uint64(len(t.Data))); err != nil {
+		return n + n_, err
+	} else {
+		n += n_
 	}
-	if _, err := io.WriteString(w, string(t.Data)); err != nil {
-		return err
+	if n_, err := io.WriteString(w, string(t.Data)); err != nil {
+		return n + n_, err
+	} else {
+		n += n_
 	}
-	return nil
+	return n, nil
 }
 
 func (t *TestStruct) UnmarshalCBOR(r io.Reader) (int, error) {
@@ -93,29 +98,34 @@ func (t *TestStruct2) InitNilEmbeddedStruct() {
 
 var lengthBufTestStruct2 = []byte{129}
 
-func (t *TestStruct2) MarshalCBOR(w io.Writer) error {
+func (t *TestStruct2) MarshalCBOR(w io.Writer) (n int, err error) {
 	if t == nil {
-		_, err := w.Write(cbg.CborNull)
-		return err
+		return w.Write(cbg.CborNull)
 	}
 	t.InitNilEmbeddedStruct()
-	if _, err := w.Write(lengthBufTestStruct2); err != nil {
-		return err
+	if n_, err := w.Write(lengthBufTestStruct2); err != nil {
+		return n_, err
+	} else {
+		n += n_
 	}
 
 	scratch := make([]byte, 9)
 
 	// t.Data2 (int64) (int64)
 	if t.Data2 >= 0 {
-		if err := cbg.WriteMajorTypeHeaderBuf(scratch, w, cbg.MajUnsignedInt, uint64(t.Data2)); err != nil {
-			return err
+		if n_, err := cbg.WriteMajorTypeHeaderBuf(scratch, w, cbg.MajUnsignedInt, uint64(t.Data2)); err != nil {
+			return n + n_, err
+		} else {
+			n += n_
 		}
 	} else {
-		if err := cbg.WriteMajorTypeHeaderBuf(scratch, w, cbg.MajNegativeInt, uint64(-t.Data2-1)); err != nil {
-			return err
+		if n_, err := cbg.WriteMajorTypeHeaderBuf(scratch, w, cbg.MajNegativeInt, uint64(-t.Data2-1)); err != nil {
+			return n + n_, err
+		} else {
+			n += n_
 		}
 	}
-	return nil
+	return n, nil
 }
 
 func (t *TestStruct2) UnmarshalCBOR(r io.Reader) (int, error) {

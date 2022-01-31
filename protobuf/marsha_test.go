@@ -66,24 +66,26 @@ func (s *TestStruct2) PB() proto.Message {
 }
 
 func TestPBMarshaler(t *testing.T) {
-	assert := assert.New(t)
-	mer := protobuf.New()
+	asrt := assert.New(t)
+	mrsh := protobuf.New()
 	s := &TestStruct{&protobuf.Test{}, "test"}
 
 	t.Run("Success", func(t *testing.T) {
-		bin, err := mer.MarshalStruct(s)
-		assert.NoError(err)
+		bin, err := mrsh.MarshalStruct(s)
+		asrt.NoError(err)
 		n := &TestStruct{}
-		err = mer.UnmarshalStruct(bin, n)
-		assert.NoError(err)
-		assert.Equal(s.Data, n.Data)
+		read, err := mrsh.UnmarshalStruct(bin, n)
+		asrt.NoError(err)
+		asrt.Equal(s.Data, n.Data)
+		asrt.Equal(-1, read)
 	})
 
 	t.Run("Error: wrong protocol buffers type", func(t *testing.T) {
-		bin, err := mer.MarshalStruct(s)
-		assert.NoError(err)
+		bin, err := mrsh.MarshalStruct(s)
+		asrt.NoError(err)
 		n := &TestStruct2{}
-		err = mer.UnmarshalStruct(bin, n)
-		assert.Equal(protobuf.ErrWrongPBType, err)
+		read, err := mrsh.UnmarshalStruct(bin, n)
+		asrt.Equal(protobuf.ErrWrongPBType, err)
+		asrt.Equal(0, read)
 	})
 }
