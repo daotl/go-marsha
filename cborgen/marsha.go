@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	cbg "github.com/daotl/cbor-gen"
 	"github.com/daotl/go-marsha"
 	"github.com/daotl/go-marsha/internal/refmt"
 )
@@ -18,7 +19,10 @@ var (
 	ErrNotCBORStructPtr      = errors.New("not a cbor.StructPtr")
 	ErrNotCBORStructSlicePtr = errors.New("not a cbor.StructSlicePtr")
 	ErrTypeNotMatch          = errors.New("model type does not match")
+	ErrNotCBORArrayBytes     = errors.New("bytes does not represent a CBOR array")
 )
+
+const maxCBORHeaderSize = 9
 
 // StructPtr implements `github.com/ipfs-ipld-cbor/encoding.cborMarshaler`
 type StructPtr interface {
@@ -108,9 +112,9 @@ func (m *Marsha) MarshalStructSlice(p marsha.StructSlicePtr) (bin []byte, err er
 		l += len(bins[i])
 	}
 
-	//binH := cbg.CborEncodeMajorType(cbg.MajArray, uint64(len(p.Val())))
-	bin = make([]byte, 0 /*len(binH)+*/, l)
-	//bin = append(bin, binH...)
+	binH := cbg.CborEncodeMajorType(cbg.MajArray, uint64(len(p.Val())))
+	bin = make([]byte, len(binH), len(binH)+l)
+	copy(bin, binH)
 	for _, b := range bins {
 		bin = append(bin, b...)
 	}
@@ -123,8 +127,16 @@ func (m *Marsha) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) (int,
 		return 0, ErrNotCBORStructSlicePtr
 	}
 
-	r := bytes.NewReader(bin)
 	bytesRead := 0
+	r := bytes.NewReader(bin)
+	if majorType, _, read, err := cbg.CborReadHeader(r); err != nil {
+		return read, err
+	} else if majorType != cbg.MajArray {
+		return read, ErrNotCBORArrayBytes
+	} else {
+		bytesRead += read
+	}
+
 	for {
 		s, ok := cbp.NewStructPtr().(StructPtr)
 		if !ok {
@@ -145,8 +157,9 @@ func (m *Marsha) UnmarshalStructSlice(bin []byte, p marsha.StructSlicePtr) (int,
 
 func (m *Marsha) NewEncoder(w io.Writer) marsha.Encoder {
 	return &encoder{
-		refmt: m.refmt,
-		w:     w,
+		refmt:         m.refmt,
+		w:             w,
+		cborHeaderBuf: make([]byte, maxCBORHeaderSize),
 	}
 }
 
@@ -158,9 +171,10 @@ func (m *Marsha) NewDecoder(r io.Reader) marsha.Decoder {
 }
 
 type encoder struct {
-	sync.Mutex // each item must be sent atomically
-	refmt      *refmt.Refmt
-	w          io.Writer
+	sync.Mutex    // each item must be sent atomically
+	refmt         *refmt.Refmt
+	w             io.Writer
+	cborHeaderBuf []byte
 }
 
 func (e *encoder) EncodePrimitive(p interface{}) (int, error) {
@@ -193,6 +207,12 @@ func (e *encoder) EncodeStructSlice(p marsha.StructSlicePtr) (n int, err error) 
 	}
 	e.Lock()
 	defer e.Unlock()
+
+	n_, err := cbg.WriteMajorTypeHeaderBuf(e.cborHeaderBuf, e.w, cbg.MajArray, uint64(len(p.Val())))
+	n += n_
+	if err != nil {
+		return n, err
+	}
 
 	for _, s := range cbp.Val() {
 		elem, ok := s.(StructPtr)
@@ -243,6 +263,14 @@ func (d *decoder) DecodeStructSlice(p marsha.StructSlicePtr) (int, error) {
 	defer d.Unlock()
 
 	bytesRead := 0
+	if majorType, _, read, err := cbg.CborReadHeader(d.r); err != nil {
+		return read, err
+	} else if majorType != cbg.MajArray {
+		return read, ErrNotCBORArrayBytes
+	} else {
+		bytesRead += read
+	}
+
 	for {
 		s, ok := cbp.NewStructPtr().(StructPtr)
 		if !ok {

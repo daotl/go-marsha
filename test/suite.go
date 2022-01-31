@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"runtime"
 	"testing"
@@ -61,7 +62,7 @@ func SubTestBasic(t *testing.T, mrsh marsha.Marsha) {
 		}
 	})
 
-	t.Run("MarshalStruct/Unmarshal", func(t *testing.T) {
+	t.Run("MarshalStruct/UnmarshalStruct", func(t *testing.T) {
 		bin, err := mrsh.MarshalStruct(s)
 		req.NoError(err)
 		s2 := &TestStruct{}
@@ -73,9 +74,10 @@ func SubTestBasic(t *testing.T, mrsh marsha.Marsha) {
 		}
 	})
 
-	t.Run("MarshalStructSlice/Unmarshal", func(t *testing.T) {
+	t.Run("MarshalStructSlice/UnmarshalStructSlice", func(t *testing.T) {
 		bin, err := mrsh.MarshalStructSlice(ss)
 		req.NoError(err)
+		fmt.Printf("%b ", bin)
 		ss2 := &TestStructs{}
 		read, err := mrsh.UnmarshalStructSlice(bin, ss2)
 		req.NoError(err)
@@ -136,7 +138,7 @@ func SubTestEncoderDecoder(t *testing.T, m marsha.Marsha) {
 		}
 	})
 
-	t.Run("MarshalStruct/Unmarshal", func(t *testing.T) {
+	t.Run("MarshalStruct/UnmarshalStruct", func(t *testing.T) {
 		var buf bytes.Buffer
 		enc := m.NewEncoder(&buf)
 		dec := m.NewDecoder(&buf)
@@ -157,7 +159,7 @@ func SubTestEncoderDecoder(t *testing.T, m marsha.Marsha) {
 		}
 	})
 
-	t.Run("MarshalStructSlice/Unmarshal", func(t *testing.T) {
+	t.Run("MarshalStructSlice/UnmarshalStructSlice", func(t *testing.T) {
 		var buf bytes.Buffer
 		enc := m.NewEncoder(&buf)
 		dec := m.NewDecoder(&buf)

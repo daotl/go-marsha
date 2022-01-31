@@ -92,7 +92,7 @@ func TestNoGenBasic(t *testing.T) {
 		enc := mrsh.NewEncoder(&network)
 		dec := mrsh.NewDecoder(&network)
 
-		t.Run("MarshalStruct/Unmarshal", func(t *testing.T) {
+		t.Run("MarshalStruct/UnmarshalStruct", func(t *testing.T) {
 			_, err := enc.EncodeStruct(s)
 			asrt.NoError(err)
 			s2 := &TestStructNoGen{}
@@ -101,7 +101,7 @@ func TestNoGenBasic(t *testing.T) {
 			asrt.Equal(s.Data, s2.Data)
 		})
 
-		t.Run("MarshalStructSlice/Unmarshal", func(t *testing.T) {
+		t.Run("MarshalStructSlice/UnmarshalStructSlice", func(t *testing.T) {
 			_, err := enc.EncodeStructSlice(ss)
 			asrt.NoError(err)
 			ss2 := &TestStructsNoGen{}
